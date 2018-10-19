@@ -8,7 +8,7 @@ public class GoogleCloudHelloWorldController {
 
     @GetMapping(value = "/")
     public String hello(){
-        return "Hi from Google Cloud";
+        return "Hola Mundo Entelgy Google Cloud";
     }
 
 }
