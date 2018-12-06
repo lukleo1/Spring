@@ -16,9 +16,10 @@ import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.DriveScopes;
 import com.google.api.services.drive.model.File;
 import com.google.api.services.drive.model.FileList;
+import org.springframework.util.ResourceUtils;
 import org.springframework.web.bind.annotation.*;
 
-import javax.websocket.server.PathParam;
+
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -29,12 +30,10 @@ import java.util.Collections;
 import java.util.List;
 
 import static com.autentia.helloworld.Util.CreateFolder.createGoogleFolder;
-import static com.autentia.helloworld.Util.CreateGoogleFile.createGoogleFile;
 import static com.autentia.helloworld.Util.FindFilesByName.getGoogleFilesByName;
 import static com.autentia.helloworld.Util.GetSubFolders.getGoogleRootFolders;
 import static com.autentia.helloworld.Util.GetSubFoldersByName.getGoogleRootFoldersByName;
 import static com.autentia.helloworld.Util.ShareGoogleFile.createPermissionForEmail;
-import static com.autentia.helloworld.Util.ShareGoogleFile.createPublicPermission;
 
 @RestController
 public class GoogleCloudHelloWorldController {
@@ -44,8 +43,8 @@ public class GoogleCloudHelloWorldController {
     private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
 
     // Directory to store user credentials for this application.
-    private static final java.io.File CREDENTIALS_FOLDER //
-            = new java.io.File(System.getProperty("user.home"), "credentials");
+//    private static final java.io.File CREDENTIALS_FOLDER //
+//            = new java.io.File(System.getProperty("user.home"), "credentials");
 
     private static final String CLIENT_SECRET_FILE_NAME = "client_secret.json";
 
@@ -53,11 +52,13 @@ public class GoogleCloudHelloWorldController {
 
     private static Credential getCredentials(final NetHttpTransport HTTP_TRANSPORT) throws IOException {
 
-        java.io.File clientSecretFilePath = new java.io.File(CREDENTIALS_FOLDER, CLIENT_SECRET_FILE_NAME);
+        java.io.File clientSecretFilePath= ResourceUtils.getFile("classpath:credentials/"+CLIENT_SECRET_FILE_NAME);
+
+        java.io.File credentials_folder= ResourceUtils.getFile("classpath:credentials");
 
         if (!clientSecretFilePath.exists()) {
             throw new FileNotFoundException("Please copy " + CLIENT_SECRET_FILE_NAME //
-                    + " to folder: " + CREDENTIALS_FOLDER.getAbsolutePath());
+                    + " to folder: " + credentials_folder.getAbsolutePath());
         }
 
         // Load client secrets.
@@ -67,20 +68,22 @@ public class GoogleCloudHelloWorldController {
 
         // Build flow and trigger user authorization request.
         GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(HTTP_TRANSPORT, JSON_FACTORY,
-                clientSecrets, SCOPES).setDataStoreFactory(new FileDataStoreFactory(CREDENTIALS_FOLDER))
+                clientSecrets, SCOPES).setDataStoreFactory(new FileDataStoreFactory(credentials_folder))
                 .setAccessType("offline").build();
 
         return new AuthorizationCodeInstalledApp(flow, new LocalServerReceiver()).authorize("user");
     }
     @GetMapping(value = "/")
     public String hello() throws IOException, GeneralSecurityException {
-        System.out.println("CREDENTIALS_FOLDER: " + CREDENTIALS_FOLDER.getAbsolutePath());
+        java.io.File credentials_folder= ResourceUtils.getFile("classpath:credentials");
+
+        System.out.println("CREDENTIALS_FOLDER: " + credentials_folder.getAbsolutePath());
 
         // 1: Create CREDENTIALS_FOLDER
-        if (!CREDENTIALS_FOLDER.exists()) {
-            CREDENTIALS_FOLDER.mkdirs();
+        if (!credentials_folder.exists()) {
+            credentials_folder.mkdirs();
 
-            System.out.println("Created Folder: " + CREDENTIALS_FOLDER.getAbsolutePath());
+            System.out.println("Created Folder: " + credentials_folder.getAbsolutePath());
             System.out.println("Copy file " + CLIENT_SECRET_FILE_NAME + " into folder above.. and rerun this class!!");
             return "Carpeta Creada";
         }
@@ -109,22 +112,22 @@ public class GoogleCloudHelloWorldController {
         return "Hola Mundo Entelgy Google Cloud";
     }
 
-    @PostMapping(path = "/file", consumes = "application/json", produces = "application/json")
-    public void createFile(@RequestBody FileDto fileDto) throws IOException, GeneralSecurityException {
-
-        java.io.File uploadFile = new java.io.File(CREDENTIALS_FOLDER.getAbsolutePath()+"/test.txt");
-
-        // Create Google File:
-
-        File googleFile = createGoogleFile(fileDto.getFolderIdParent(), fileDto.getContentType(), fileDto.getCustomFileName(), uploadFile);
-
-        System.out.println("Created Google file!");
-        System.out.println("WebContentLink: " + googleFile.getWebContentLink() );
-        System.out.println("WebViewLink: " + googleFile.getWebViewLink() );
-
-        System.out.println("Done!");
-
-    }
+//    @PostMapping(path = "/file", consumes = "application/json", produces = "application/json")
+//    public void createFile(@RequestBody FileDto fileDto) throws IOException, GeneralSecurityException {
+//
+//        java.io.File uploadFile = new java.io.File(CREDENTIALS_FOLDER.getAbsolutePath()+"/test.txt");
+//
+//        // Create Google File:
+//
+//        File googleFile = createGoogleFile(fileDto.getFolderIdParent(), fileDto.getContentType(), fileDto.getCustomFileName(), uploadFile);
+//
+//        System.out.println("Created Google file!");
+//        System.out.println("WebContentLink: " + googleFile.getWebContentLink() );
+//        System.out.println("WebViewLink: " + googleFile.getWebViewLink() );
+//
+//        System.out.println("Done!");
+//
+//    }
 
     @GetMapping(value = "/folder/list")
     public String getSubFolders() throws IOException, GeneralSecurityException {
